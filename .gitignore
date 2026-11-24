@@ -1,0 +1,7 @@
+public/hot
+/vendor
+/node_modules
+/public/storage
+/public/build
+.env
+packages/**/node_modules

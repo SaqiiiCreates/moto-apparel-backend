@@ -1,0 +1,7 @@
+<?php
+
+namespace Webkul\Page\Models;
+
+use Konekt\Concord\Proxies\ModelProxy;
+
+class PageSectionProxy extends ModelProxy {}
