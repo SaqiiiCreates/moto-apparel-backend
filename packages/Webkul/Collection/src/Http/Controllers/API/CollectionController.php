@@ -14,26 +14,36 @@ class CollectionController extends Controller
      */
     public function index()
     {
-        // Fetch only popular collections and select id, name, slug, thumbnail_image
         $collections = $this->collectionRepository
-            ->scopeQuery(fn($query) => $query->where('is_popular', 1)->where('is_active', 1)
-                ->select(['id', 'name', 'slug', 'description', 'thumbnail_image']))
+            ->scopeQuery(fn($query) => $query
+                ->where('is_popular', 1)
+                ->where('is_active', 1)
+                ->select([
+                    'id',
+                    'name',
+                    'slug',
+                    'description',
+                    'thumbnail_image',
+                    'button_label',
+                    'button_link',
+                ]))
             ->all();
 
-        // Transform thumbnail_image to full URL
         $collections = collect($collections)->map(fn($c) => [
-            'id' => $c->id,
-            'name' => $c->name,
-            'slug' => $c->slug,
-            'description' => $c->description,
-            'thumbnail_image' => $c->thumbnail_image 
-                ? asset('storage/' . $c->thumbnail_image) 
+            'id'              => $c->id,
+            'name'            => $c->name,
+            'slug'            => $c->slug,
+            'description'     => $c->description,
+            'button_label'    => $c->button_label,
+            'button_link'     => $c->button_link,
+            'thumbnail_image' => $c->thumbnail_image
+                ? asset('storage/' . $c->thumbnail_image)
                 : null,
         ]);
 
         return response()->json([
             'success' => true,
-            'data' => $collections,
+            'data'    => $collections,
         ]);
     }
 
@@ -64,6 +74,8 @@ class CollectionController extends Controller
                 'name' => $collection->name,
                 'slug' => $collection->slug,
                 'description' => $collection->description,
+                'button_label' => $collection->button_label,
+                'button_link'  => $collection->button_link,
                 'sort_order' => $collection->sort_order,
 
                 'thumbnail_image' => $collection->thumbnail_image

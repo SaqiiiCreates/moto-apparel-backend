@@ -30,6 +30,8 @@ class CollectionController extends Controller
             'name'            => 'required|string|max:255',
             'slug'            => 'required|unique:collections,slug|max:255',
             'description'     => 'nullable|string',
+            'button_label'    => 'nullable|string|max:255',
+            'button_link'     => 'nullable|string|max:255',
             'sort_order'      => 'nullable|integer',
             'thumbnail_image' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
             'banner_image'    => 'required|image|mimes:jpg,jpeg,png,webp|max:4096',
@@ -71,18 +73,20 @@ class CollectionController extends Controller
         $collection = $this->collectionRepository->findOrFail($id);
 
         $data = request()->validate([
-            'name'        => 'nullable|string|max:255',
-            'slug'        => [
+            'name'         => 'nullable|string|max:255',
+            'slug'         => [
                 'nullable',
                 'max:255',
                 Rule::unique('collections', 'slug')->ignore($collection->id),
             ],
-            'description' => 'nullable|string',
-            'sort_order'  => 'nullable|integer',
+            'description'     => 'nullable|string',
+            'button_label'    => 'nullable|string|max:255',
+            'button_link'     => 'nullable|string|max:255',
+            'sort_order'      => 'nullable|integer',
             'thumbnail_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:3072',
             'banner_image'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:3072',
-            'is_active'   => 'sometimes|boolean',
-            'is_popular'  => 'sometimes|boolean',
+            'is_active'       => 'sometimes|boolean',
+            'is_popular'      => 'sometimes|boolean',
         ]);        
 
         $data['name'] = $data['name'] ?? $collection->name;

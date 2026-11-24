@@ -13,6 +13,10 @@ class NavigationMenu extends Model
         'image',
         'image_label',
         'image_link',
+        'image_subtitle',
+        'bottom_text',
+        'bottom_link_label',
+        'bottom_link_url',
         'sort_order',
         'is_active',
     ];

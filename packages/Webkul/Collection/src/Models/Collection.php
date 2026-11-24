@@ -15,7 +15,9 @@ class Collection extends Model implements CollectionContract
         'description',
         'thumbnail_image',
         'banner_image',
-        'is_popular',        
+        'button_label',
+        'button_link',
+        'is_popular',
         'is_active',
         'sort_order'
     ];

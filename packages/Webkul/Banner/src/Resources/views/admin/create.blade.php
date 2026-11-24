@@ -35,7 +35,13 @@
 
                     <div class="mb-4">
                         <label class="block text-xs text-gray-600 font-medium mb-1">Main Heading</label>
-                        <input type="text" name="heading" class="w-full py-2 px-3 border rounded-md" placeholder="The Complete Look">
+                        <textarea
+                                name="heading"
+                                rows="3"
+                                class="w-full py-2 px-3 border rounded-md"
+                                placeholder="The Complete Look"
+                            >{{ old('heading') }}
+                        </textarea>
                     </div>
 
                     <div class="mb-1">

@@ -12,7 +12,8 @@ class NavigationMenuItem extends Model
         'custom_url',
         'reference_id',
         'sort_order',
-        'group_id'
+        'group_id',
+        'display_style',
     ];
 
     public function group()

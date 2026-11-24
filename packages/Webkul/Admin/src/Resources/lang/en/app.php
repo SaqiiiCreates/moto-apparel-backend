@@ -3820,10 +3820,12 @@ return [
                     'title' => 'Design',
 
                     'admin-logo' => [
-                        'favicon'    => 'Favicon',
-                        'logo-image' => 'Logo Image',
-                        'title'      => 'Admin Logo',
-                        'title-info' => 'Configure logo and favicon images for your website\'s front end for better branding and recognition.',
+                        'favicon'           => 'Favicon',
+                        'logo-image'        => 'Homepage Logo',
+                        'inner-logo-image'  => 'Inner Pages Logo',
+                        'footer-logo-image' => 'Footer Logo',
+                        'title'             => 'Website Logos',
+                        'title-info'        => 'Configure homepage, inner page, footer, and favicon images for your website.',
                     ],
 
                     'menu-category' => [

@@ -27,6 +27,8 @@ return [
     'allowed_origins' => [
         'https://ilmohikmat.org',
         'https://control.ilmohikmat.org',
+        'http://localhost:3000',        // ← add this
+        'http://127.0.0.1:3000',
     ],
 
     'allowed_origins_patterns' => [],

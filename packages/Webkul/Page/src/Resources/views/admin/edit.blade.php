@@ -9,6 +9,15 @@
     <form method="POST" action="{{ route('admin.pages.update', $page->id) }}" enctype="multipart/form-data">
         @csrf
         @method('PUT') 
+        @if ($errors->any())
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 mx-4">
+                <ul class="list-disc list-inside text-sm">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         {{-- Hidden Inputs --}}
         <input type="hidden" name="banner_focal_x" id="banner_focal_x" value="{{ $page->banner_focal_x ?? 50 }}">

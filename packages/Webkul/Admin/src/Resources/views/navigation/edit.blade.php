@@ -61,6 +61,26 @@
                         />
                     </x-admin::form.control-group>
 
+                    @foreach ([
+                        'bottom_text' => 'Bottom Text',
+                        'bottom_link_label' => 'Bottom Link Label',
+                        'bottom_link_url' => 'Bottom Link URL',
+                    ] as $field => $label)
+
+                        <x-admin::form.control-group>
+                            <x-admin::form.control-group.label>
+                                {{ $label }}
+                            </x-admin::form.control-group.label>
+
+                            <x-admin::form.control-group.control
+                                type="text"
+                                :name="$field"
+                                :value="old($field, $menu->{$field})"
+                            />
+                        </x-admin::form.control-group>
+
+                    @endforeach
+
                     <x-admin::form.control-group>
                         <x-admin::form.control-group.label class="required">
                             Menu Location
@@ -153,6 +173,21 @@
                                                         class="border p-1 flex-1"
                                                     >
 
+                                                    <select
+                                                        name="groups[{{ $group->id }}][items][{{ $item->id }}][display_style]"
+                                                        class="border p-1 w-36"
+                                                    >
+                                                        <option value="standard"
+                                                            @selected(($item->display_style ?? 'standard') === 'standard')>
+                                                            Standard
+                                                        </option>
+
+                                                        <option value="featured"
+                                                            @selected($item->display_style === 'featured')>
+                                                            Featured
+                                                        </option>
+                                                    </select>
+
                                                     <button type="button"
                                                             class="text-red-500"
                                                             onclick="this.closest('.item').remove()">
@@ -227,6 +262,17 @@
                         @endif
                     </x-admin::form.control-group>
 
+                    <x-admin::form.control-group>
+                        <x-admin::form.control-group.label>
+                            Image Subtitle
+                        </x-admin::form.control-group.label>
+
+                        <x-admin::form.control-group.control
+                            type="textarea"
+                            name="image_subtitle"
+                            :value="old('image_subtitle', $menu->image_subtitle)"
+                        />
+                    </x-admin::form.control-group>
                     <x-admin::form.control-group>
                         <x-admin::form.control-group.label>Image Label</x-admin::form.control-group.label>
 
@@ -385,6 +431,14 @@
                             name="groups[${groupId}][items][${id}][title]"
                             class="border p-1 flex-1"
                             placeholder="Item Title">
+
+                        <select
+                            name="groups[${groupId}][items][${id}][display_style]"
+                            class="border p-1 w-36"
+                        >
+                            <option value="standard">Standard</option>
+                            <option value="featured">Featured</option>
+                        </select>
 
                         <button type="button"
                                 class="text-red-500 font-bold text-lg"

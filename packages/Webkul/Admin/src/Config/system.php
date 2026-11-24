@@ -83,27 +83,27 @@ return [
     ], [
         'key'    => 'general.content.topbar_settings',
         'name'   => 'Topbar Settings',
-        'info'   => 'Configure the marquee messages, timezone, and left corner text for the topbar.',
+        'info'   => 'Configure the top bar message, timezone, and left corner text.',
         'sort'   => 1,
         'fields' => [
             [
-                'name'  => 'left_text',
-                'title' => 'Left Corner Text',
-                'type'  => 'text',
+                'name'    => 'left_text',
+                'title'   => 'Left Corner Text',
+                'type'    => 'text',
                 'default' => 'For the Restless',
             ],
             [
-                'name'  => 'marquee_messages',
-                'title' => 'Marquee Messages',
-                'type'  => 'textarea',
-                'default' => 'Invisible Protection For Visible Style!',
+                'name'    => 'topbar_message',
+                'title'   => 'Top Bar Message',
+                'type'    => 'textarea',
+                'default' => 'PURPOSE BUILT FOR THE RIDE. DESIGNED FOR EVERYTHING AFTER.',
             ],
             [
-                'name'  => 'timezone',
-                'title' => 'Clock Timezone',
-                'type'  => 'select',
+                'name'    => 'timezone',
+                'title'   => 'Clock Timezone',
+                'type'    => 'select',
                 'default' => 'America/Los_Angeles',
-                'options' => $timezones
+                'options' => $timezones,
             ],
         ],
     ],[
@@ -380,6 +380,18 @@ return [
             [
                 'name'          => 'logo_image',
                 'title'         => 'admin::app.configuration.index.general.design.admin-logo.logo-image',
+                'type'          => 'image',
+                'channel_based' => false,
+                'validation'    => 'mimes:bmp,jpeg,jpg,png,webp,svg',
+            ], [
+                'name'          => 'inner_logo_image',
+                'title'         => 'admin::app.configuration.index.general.design.admin-logo.inner-logo-image',
+                'type'          => 'image',
+                'channel_based' => false,
+                'validation'    => 'mimes:bmp,jpeg,jpg,png,webp,svg',
+            ],[
+                'name'          => 'footer_logo_image',
+                'title'         => 'admin::app.configuration.index.general.design.admin-logo.footer-logo-image',
                 'type'          => 'image',
                 'channel_based' => false,
                 'validation'    => 'mimes:bmp,jpeg,jpg,png,webp,svg',

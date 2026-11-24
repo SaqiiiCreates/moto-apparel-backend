@@ -36,7 +36,12 @@
 
                     <div class="mb-4">
                         <label class="block text-xs text-gray-600 font-medium mb-1">Main Heading</label>
-                        <input type="text" name="heading" value="{{ old('heading') ?: $banner->heading }}" class="w-full py-2 px-3 border rounded-md">
+                        <textarea
+                            name="heading"
+                            rows="3"
+                            class="w-full py-2 px-3 border rounded-md"
+                        >{{ old('heading', $banner->heading) }}
+                        </textarea>
                     </div>
 
                     <div class="mb-1">

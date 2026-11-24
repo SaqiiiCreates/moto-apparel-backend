@@ -7,6 +7,7 @@ use Webkul\Product\Models\Product;
 use Webkul\Attribute\Models\AttributeOption;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\JsonResponse;
+use App\Models\ProductDetail;
 
 class ProductController extends Controller
 {
@@ -22,6 +23,7 @@ class ProductController extends Controller
             'variants.inventories',
             'product_flats', 
             'categories',
+            'categories.parent',
         ])
         ->where('parent_id', null)
         ->orderByDesc('created_at')
@@ -122,6 +124,21 @@ class ProductController extends Controller
 
                 'collection' => $product->categories->first()?->name ?? null,
 
+                'categories' => $product->categories->map(function ($category) {
+                    return [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                        'slug' => $category->slug,
+                        'parent_id' => $category->parent_id,
+
+                        'parent' => $category->parent ? [
+                            'id' => $category->parent->id,
+                            'name' => $category->parent->name,
+                            'slug' => $category->parent->slug,
+                        ] : null,
+                    ];
+                })->values(),
+
                 'colors' => $colors,
 
                 'model_info' => $product->model_info ?? null,
@@ -153,6 +170,7 @@ class ProductController extends Controller
             'variants.inventories',
             'variants.attribute_values.attribute',
             'categories',
+            'categories.parent',
             'videos',
             'product_flats',
             'related_products.images', 
@@ -168,6 +186,7 @@ class ProductController extends Controller
                 'variants.inventories',
                 'variants.attribute_values.attribute',
                 'categories',
+                'categories.parent',
                 'product_flats',
             ])->findOrFail($product->parent_id);
         }
@@ -346,6 +365,21 @@ class ProductController extends Controller
 
                 'collection' => $product->categories->first()?->name,
 
+                'categories' => $product->categories->map(function ($category) {
+                    return [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                        'slug' => $category->slug,
+                        'parent_id' => $category->parent_id,
+
+                        'parent' => $category->parent ? [
+                            'id' => $category->parent->id,
+                            'name' => $category->parent->name,
+                            'slug' => $category->parent->slug,
+                        ] : null,
+                    ];
+                })->values(),
+
                 'variants' => $visualVariants->map(function ($v) use ($product) {
                     return [
                         'id' => $v['id'],
@@ -374,6 +408,18 @@ class ProductController extends Controller
                 'description' => $product->description,
                 'composition' => $product->composition,
                 'shipping' => $product->shipping_info,
+
+                'product_details' => ProductDetail::where('product_id', $product->id)
+                    ->orderBy('sort_order')
+                    ->get()
+                    ->map(fn ($detail) => [
+                        'id'           => $detail->id,
+                        'title'        => $detail->title,
+                        'content'      => $detail->content,
+                        'button_label' => $detail->button_label,
+                        'button_link'  => $detail->button_link,
+                    ])
+                    ->values(),
 
                 'size_guide_content' => $product->size_guide_content,
 

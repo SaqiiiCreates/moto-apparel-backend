@@ -65,8 +65,16 @@
                 {{-- Heading & Subheading --}}
                 <div class="flex gap-4">
                     <div class="flex-1">
-                        <label class="block text-[12px] text-gray-600 font-medium">Heading</label>
-                        <input type="text" name="heading" value="{{ old('heading', $slide->heading) }}" class="w-full py-2 px-3 border rounded-[6px]">
+                        <label class="block text-[12px] text-gray-600 font-medium">
+                            Heading
+                        </label>
+
+                        <textarea
+                            name="heading"
+                            rows="4"
+                            placeholder="Enter each heading line on a new line"
+                            class="w-full py-2 px-3 border rounded-[6px]"
+                        >{{ old('heading', $slide->heading) }}</textarea>
                     </div>
                     <div class="flex-1">
                         <label class="block text-[12px] text-gray-600 font-medium">Sub-Heading</label>
@@ -74,10 +82,52 @@
                     </div>
                 </div>
 
-                {{-- Button Link --}}
+                {{-- Description --}}
                 <div>
-                    <label class="block text-[12px] text-gray-600 font-medium">Button Link</label>
-                    <input type="text" name="button_link" value="{{ old('button_link', $slide->button_link) }}" class="w-full py-2 px-3 border rounded-[6px]">
+                    <label class="block text-[12px] text-gray-600 font-medium">
+                        Description
+                    </label>
+
+                    <textarea
+                        name="description"
+                        rows="3"
+                        class="w-full py-2 px-3 border rounded-[6px]"
+                    >{{ old('description', $slide->description) }}</textarea>
+
+                    @error('description')
+                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                {{-- Button Text & Button Link --}}
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-[12px] text-gray-600 font-medium">
+                            Button Text
+                        </label>
+
+                        <input
+                            type="text"
+                            name="button_text"
+                            value="{{ old('button_text', $slide->button_text) }}"
+                            placeholder="e.g. EXPLORE THE COLLECTION"
+                            class="w-full py-2 px-3 border rounded-[6px]"
+                        >
+                    </div>
+
+                    <div class="flex-1">
+                        <label class="block text-[12px] text-gray-600 font-medium">
+                            Button Link
+                        </label>
+
+                        <input
+                            type="text"
+                            name="button_link"
+                            value="{{ old('button_link', $slide->button_link) }}"
+                            placeholder="e.g. #collection"
+                            class="w-full py-2 px-3 border rounded-[6px]"
+                        >
+                    </div>
                 </div>
 
                 {{-- Settings --}}

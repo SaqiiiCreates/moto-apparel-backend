@@ -244,6 +244,9 @@
                     @endforeach
 
                     @if ($column == 1)
+                        <!-- Product Details -->
+                        @include('admin::catalog.products.edit.product_detail')
+
                         <!-- Images View Blade File -->
                         @include('admin::catalog.products.edit.images')
 

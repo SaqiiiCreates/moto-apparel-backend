@@ -9,6 +9,8 @@ class DesignSettingsController
     public function index()
     {
         $logo = core()->getConfigData('general.design.admin_logo.logo_image');
+        $innerLogo = core()->getConfigData('general.design.admin_logo.inner_logo_image');
+        $footerLogo = core()->getConfigData('general.design.admin_logo.footer_logo_image');
         $favicon = core()->getConfigData('general.design.admin_logo.favicon');
 
         $toUrl = function ($path) {
@@ -24,8 +26,10 @@ class DesignSettingsController
         };
 
         return response()->json([
-            'logo' => $toUrl($logo),
-            'favicon' => $toUrl($favicon),
+            'logo'        => $toUrl($logo),
+            'inner_logo'  => $toUrl($innerLogo),
+            'footer_logo' => $toUrl($footerLogo),
+            'favicon'     => $toUrl($favicon),
         ]);
     }
 }

@@ -27,13 +27,53 @@
                 {{-- Heading & Subheading --}}
                 <div class="flex gap-4">
                     <div class="flex-1">
-                        <label class="block text-[12px] text-gray-600 font-medium">Heading</label>
-                        <input type="text" name="heading" value="{{ old('heading') }}" class="w-full py-2 px-3 border rounded-[6px]">
+                        <label class="block text-[12px] text-gray-600 font-medium">
+                            Heading
+                        </label>
+
+                        <textarea
+                            name="heading"
+                            rows="4"
+                            placeholder="Enter each heading line on a new line"
+                            class="w-full py-2 px-3 border rounded-[6px]"
+                        >{{ old('heading') }}</textarea>
                     </div>
+
                     <div class="flex-1">
-                        <label class="block text-[12px] text-gray-600 font-medium">Sub-Heading</label>
-                        <input type="text" name="subheading" value="{{ old('subheading') }}" class="w-full py-2 px-3 border rounded-[6px]">
+                        <label class="block text-[12px] text-gray-600 font-medium">
+                            Sub-Heading
+                        </label>
+
+                        <input
+                            type="text"
+                            name="subheading"
+                            value="{{ old('subheading') }}"
+                            placeholder="e.g. THE FREEDOM TO BE YOURSELF"
+                            class="w-full py-2 px-3 border rounded-[6px]"
+                        >
+
+                        @error('subheading')
+                            <span class="text-red-500 text-xs">{{ $message }}</span>
+                        @enderror
                     </div>
+                </div>
+
+                {{-- Description --}}
+                <div>
+                    <label class="block text-[12px] text-gray-600 font-medium">
+                        Description
+                    </label>
+
+                    <textarea
+                        name="description"
+                        rows="3"
+                        placeholder="e.g. Protective motorcycle clothing. Designed for everyday life."
+                        class="w-full py-2 px-3 border rounded-[6px]"
+                    >{{ old('description') }}</textarea>
+
+                    @error('description')
+                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 {{-- Button Text & Button Link --}}

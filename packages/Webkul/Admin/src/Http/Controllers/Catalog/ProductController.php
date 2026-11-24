@@ -2,6 +2,8 @@
 
 namespace Webkul\Admin\Http\Controllers\Catalog;
 
+use App\Models\ProductDetail;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
@@ -149,6 +151,21 @@ class ProductController extends Controller
      */
     public function update(ProductForm $request, int $id)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Product Details Validation
+        |--------------------------------------------------------------------------
+        */
+
+        $validatedDetails = $request->validate([
+            'product_details_present'        => 'sometimes|boolean',
+            'product_details'                => 'sometimes|array',
+            'product_details.*.title'        => 'required|string|max:255',
+            'product_details.*.content'      => 'nullable|string',
+            'product_details.*.button_label' => 'nullable|string|max:255',
+            'product_details.*.button_link'  => 'nullable|string|max:2048',
+        ]);
+
         Event::dispatch('catalog.product.update.before', $id);
 
         $data = $request->all();
@@ -181,7 +198,47 @@ class ProductController extends Controller
             $data['technical_features'] = json_encode($technicalFeatures);
         }
 
-        $product = $this->productRepository->update($data, $id);
+        /*
+        |--------------------------------------------------------------------------
+        | Remove Custom Detail Fields From Product Repository Payload
+        |--------------------------------------------------------------------------
+        */
+
+        unset(
+            $data['product_details'],
+            $data['product_details_present']
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Product And Save Detail Sections
+        |--------------------------------------------------------------------------
+        */
+
+        $product = DB::transaction(function () use ($data, $id, $request, $validatedDetails) {
+            // Preserve the existing Bagisto product update process.
+            $product = $this->productRepository->update($data, $id);
+
+            // Only update sections when the editor was submitted.
+            if ($request->boolean('product_details_present')) {
+                // Remove previously saved sections.
+                ProductDetail::where('product_id', $id)->delete();
+
+                // Save sections in the order shown in the admin editor.
+                foreach (($validatedDetails['product_details'] ?? []) as $index => $detail) {
+                    ProductDetail::create([
+                        'product_id'   => $id,
+                        'title'        => $detail['title'],
+                        'content'      => $detail['content'] ?? null,
+                        'button_label' => $detail['button_label'] ?? null,
+                        'button_link'  => $detail['button_link'] ?? null,
+                        'sort_order'   => $index,
+                    ]);
+                }
+            }
+
+            return $product;
+        });
 
         Event::dispatch('catalog.product.update.after', $product);
 
