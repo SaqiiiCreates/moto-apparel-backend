@@ -11,6 +11,8 @@ use Webkul\Sales\Repositories\OrderRepository;
 use Webkul\Sales\Transformers\OrderResource;
 use Webkul\Sales\Repositories\InvoiceRepository;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class StripeController
 {
@@ -25,36 +27,123 @@ class StripeController
         $this->invoiceRepository = $invoiceRepository;
     }
 
+    /**
+     * Create a PaymentIntent for a cart, or update an existing one
+     * (payment_intent_id) to the cart's current total.
+     *
+     * The storefront calls this again right before confirming the payment,
+     * after address and shipping are saved, so the amount charged equals
+     * the final Bagisto grand total.
+     */
     public function createIntent(Request $request)
     {
-        $cartId = $request->cart_id;
-        if (!$cartId) return response()->json(['error' => 'cart_id required'], 422);
+        $cartId = $request->input('cart_id');
+        $paymentIntentId = $request->input('payment_intent_id');
 
-        // Use cached cart if possible
-        $cart = Cache::remember("cart_{$cartId}", 30, function() use ($cartId) {
-            return app(CartRepository::class)->find($cartId);
-        });
+        if (! $cartId) {
+            return response()->json(['error' => 'cart_id required'], 422);
+        }
 
-        if (!$cart) return response()->json(['error' => 'Cart not found'], 404);
+        $cart = $this->freshCartTotals($cartId);
 
-        Cart::collectTotals();
+        if (! $cart) {
+            return response()->json(['error' => 'Cart not found'], 404);
+        }
 
-        $amount = (int) round($cart->grand_total * 100);
+        [$amount, $currency] = $this->cartAmount($cart);
 
-        $secretKey = Cache::remember('stripe_secret', 3600, fn() => 
-            core()->getConfigData('sales.payment_methods.stripe.secret_key')
-        );
+        if ($amount <= 0) {
+            return response()->json(['error' => 'Cart total is zero'], 422);
+        }
+
+        $secretKey = core()->getConfigData('sales.payment_methods.stripe.secret_key');
+
+        if (! $secretKey) {
+            return response()->json(['error' => 'Stripe secret key is not configured.'], 500);
+        }
 
         \Stripe\Stripe::setApiKey($secretKey);
 
-        $intent = \Stripe\PaymentIntent::create([
-            'amount' => $amount,
-            'currency' => 'usd',
-            'automatic_payment_methods' => ['enabled' => true],
-            'metadata' => ['cart_id' => $cartId],
-        ]);
+        try {
+            if ($paymentIntentId) {
+                $intent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
 
-        return response()->json(['clientSecret' => $intent->client_secret]);
+                if ((string) ($intent->metadata['cart_id'] ?? '') !== (string) $cart->id) {
+                    return response()->json(['error' => 'Payment does not belong to this cart'], 422);
+                }
+
+                if (in_array($intent->status, ['succeeded', 'canceled', 'processing'], true)) {
+                    return response()->json(['error' => 'Payment can no longer be updated'], 409);
+                }
+
+                if ($intent->amount !== $amount || $intent->currency !== $currency) {
+                    $intent = \Stripe\PaymentIntent::update($intent->id, [
+                        'amount'   => $amount,
+                        'currency' => $currency,
+                    ]);
+                }
+            } else {
+                $intent = \Stripe\PaymentIntent::create([
+                    'amount'                    => $amount,
+                    'currency'                  => $currency,
+                    'automatic_payment_methods' => ['enabled' => true],
+                    'metadata'                  => ['cart_id' => $cart->id],
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Stripe create/update intent failed', [
+                'cart_id' => $cart->id,
+                'error'   => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'Could not prepare the payment.'], 500);
+        }
+
+        return response()->json([
+            'clientSecret' => $intent->client_secret,
+            'amount'       => $intent->amount,
+            'currency'     => $intent->currency,
+        ]);
+    }
+
+    /**
+     * Load a cart and recalculate its totals (shipping, tax, discounts).
+     */
+    protected function freshCartTotals($cartId)
+    {
+        $cart = app(CartRepository::class)->find($cartId);
+
+        if (! $cart || ! $cart->is_active) {
+            return null;
+        }
+
+        Cart::setCart($cart);
+        Cart::collectTotals();
+
+        return Cart::getCart()?->refresh() ?? $cart->refresh();
+    }
+
+    /**
+     * Amount in the smallest currency unit, and the lowercase currency code.
+     */
+    protected function cartAmount($cart): array
+    {
+        $currency = strtolower($cart->cart_currency_code ?: 'USD');
+
+        return [(int) round(((float) $cart->grand_total) * 100), $currency];
+    }
+
+    /**
+     * The order already created for this PaymentIntent, if any.
+     */
+    protected function orderForPaymentIntent(string $paymentIntentId)
+    {
+        $orderId = DB::table('order_payment')
+            ->where('method', 'stripe')
+            ->where('additional', 'like', '%' . $paymentIntentId . '%')
+            ->value('order_id');
+
+        return $orderId ? $this->orderRepository->find($orderId) : null;
     }
 
     public function confirmPayment(Request $request)
@@ -79,6 +168,13 @@ class StripeController
 
         \Stripe\Stripe::setApiKey($key);
 
+        // One order per PaymentIntent, even if the shopper double-clicks or retries.
+        $lock = Cache::lock('stripe_confirm_' . $paymentIntentId, 60);
+
+        if (! $lock->block(20)) {
+            return response()->json(['error' => 'Payment is already being processed.'], 409);
+        }
+
         try {
             $paymentIntent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
 
@@ -88,14 +184,35 @@ class StripeController
                 ], 400);
             }
 
+            if ($existingOrder = $this->orderForPaymentIntent($paymentIntent->id)) {
+                return response()->json([
+                    'success'  => true,
+                    'order_id' => $existingOrder->id,
+                ]);
+            }
+
+            if ((string) ($paymentIntent->metadata['cart_id'] ?? '') !== (string) $cartId) {
+                Log::warning('Stripe confirm: payment intent / cart mismatch', [
+                    'payment_intent' => $paymentIntent->id,
+                    'intent_cart_id' => $paymentIntent->metadata['cart_id'] ?? null,
+                    'cart_id'        => $cartId,
+                ]);
+
+                return response()->json(['error' => 'Payment does not belong to this cart.'], 422);
+            }
+
             request()->merge([
                 'stripe_payment_intent' => $paymentIntent->toArray(),
+                // Stored on order_payment.additional; used to find the order on retries.
+                'orderData' => [
+                    'stripe_payment_intent_id' => $paymentIntent->id,
+                ],
             ]);
 
             $cartRepo = app(CartRepository::class);
             $cart = $cartRepo->find($cartId);
 
-            if (!$cart) {
+            if (!$cart || ! $cart->is_active) {
                 return response()->json([
                     'error' => 'Cart not found',
                 ], 404);
@@ -204,6 +321,36 @@ class StripeController
             |--------------------------------------------------------------------------
             */
 
+            /*
+            |--------------------------------------------------------------------------
+            | Verify the charged amount matches the final cart total
+            |--------------------------------------------------------------------------
+            */
+
+            Cart::setCart($cart);
+            Cart::collectTotals();
+
+            $cart = Cart::getCart();
+            $cart->refresh();
+            $cart->load(['payment', 'billing_address', 'shipping_address', 'shipping_rates', 'items']);
+
+            [$expectedAmount, $expectedCurrency] = $this->cartAmount($cart);
+
+            if ($paymentIntent->amount_received !== $expectedAmount || $paymentIntent->currency !== $expectedCurrency) {
+                Log::error('Stripe confirm: amount mismatch, order not created', [
+                    'payment_intent'  => $paymentIntent->id,
+                    'cart_id'         => $cart->id,
+                    'paid'            => $paymentIntent->amount_received,
+                    'paid_currency'   => $paymentIntent->currency,
+                    'expected'        => $expectedAmount,
+                    'expected_currency' => $expectedCurrency,
+                ]);
+
+                return response()->json([
+                    'error' => 'The amount paid does not match your order total. Please contact support; you will not be charged twice.',
+                ], 409);
+            }
+
             $data = (new OrderResource($cart))->jsonSerialize();
 
             $order = $this->orderRepository->create($data);
@@ -232,8 +379,15 @@ class StripeController
             return response()->json(['error' => 'Failed to create order'], 500);
 
         } catch (\Exception $e) {
-            // \Log::error('Stripe confirm error: ' . $e->getMessage());
+            Log::error('Stripe confirm error', [
+                'payment_intent' => $paymentIntentId,
+                'cart_id'        => $cartId,
+                'error'          => $e->getMessage(),
+            ]);
+
             return response()->json(['error' => $e->getMessage()], 500);
+        } finally {
+            $lock->release();
         }
     }
 
