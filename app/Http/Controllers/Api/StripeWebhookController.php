@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
 use Stripe\Webhook;
-use App\Models\Order;
+use Webkul\Sales\Models\Order;
 
 class StripeWebhookController
 {
